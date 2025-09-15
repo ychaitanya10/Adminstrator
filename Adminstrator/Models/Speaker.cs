@@ -25,5 +25,7 @@ namespace Adminstrator.Models
         public User User { get; set; }
 
         public ICollection<Event> Events { get; set; }
+
+        public ICollection<Feedback> Feedbacks { get; set; }
     }
 }

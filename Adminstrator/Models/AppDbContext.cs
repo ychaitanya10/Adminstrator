@@ -17,6 +17,7 @@ namespace Adminstrator.Models
         public DbSet<Topic> Topics { get; set; }
         public DbSet<Location> Locations { get; set; }
         public DbSet<PromotionCode> PromotionCodes { get; set; }
+        public DbSet<Feedback> Feedbacks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +66,20 @@ namespace Adminstrator.Models
                 .WithOne(e => e.Location)
                 .HasForeignKey(e => e.LocationId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Event -> Feedback (one-to-many)
+            modelBuilder.Entity<Event>()
+                .HasMany(e => e.Feedbacks)
+                .WithOne(f => f.Event)
+                .HasForeignKey(f => f.EventID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Speaker -> Feedback (one-to-many)
+            modelBuilder.Entity<Speaker>()
+                .HasMany(s => s.Feedbacks)
+                .WithOne(f => f.Speaker)
+                .HasForeignKey(f => f.SpeakerID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

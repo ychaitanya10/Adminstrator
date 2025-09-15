@@ -9,7 +9,7 @@ namespace Adminstrator.Models
         [Key]
         public int AdminId { get; set; }
         [Required]
-        [StringLength(50, MinimumLength = 2)]
+        [StringLength(50, MinimumLength = 8)]
         public string Name { get; set; }    
         [Required]
         [EmailAddress(ErrorMessage = "Invalid Email Address.")]

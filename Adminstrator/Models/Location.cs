@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Adminstrator.Models
 {
@@ -12,6 +13,7 @@ namespace Adminstrator.Models
         [Required]
         public string State { get; set; }
         public string Description { get; set; }
-        public ICollection<Event> Events { get; set; }
+        [JsonIgnore]
+        public ICollection<Event> ?Events { get; set; }
     }
 }

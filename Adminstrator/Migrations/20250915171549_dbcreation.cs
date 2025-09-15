@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Adminstrator.Migrations
 {
     /// <inheritdoc />
-    public partial class ElectronicaDB : Migration
+    public partial class dbcreation : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,8 +33,8 @@ namespace Adminstrator.Migrations
                     PromotionCodeId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Code = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ValidTo = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ValidFrom = table.Column<DateOnly>(type: "date", nullable: false),
+                    ValidTo = table.Column<DateOnly>(type: "date", nullable: false),
                     DiscountPercentage = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
                 },
                 constraints: table =>
@@ -64,8 +64,8 @@ namespace Adminstrator.Migrations
                 {
                     UserId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Username = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Password = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Role = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -79,7 +79,7 @@ namespace Adminstrator.Migrations
                 {
                     AdminId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserId = table.Column<int>(type: "int", nullable: false)
@@ -91,8 +91,7 @@ namespace Adminstrator.Migrations
                         name: "FK_Administrators_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "UserId");
                 });
 
             migrationBuilder.CreateTable(
@@ -163,20 +162,17 @@ namespace Adminstrator.Migrations
                         name: "FK_Events_Locations_LocationId",
                         column: x => x.LocationId,
                         principalTable: "Locations",
-                        principalColumn: "LocationId",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "LocationId");
                     table.ForeignKey(
                         name: "FK_Events_Speakers_SpeakerId",
                         column: x => x.SpeakerId,
                         principalTable: "Speakers",
-                        principalColumn: "SpeakerId",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "SpeakerId");
                     table.ForeignKey(
                         name: "FK_Events_Topics_TopicId",
                         column: x => x.TopicId,
                         principalTable: "Topics",
-                        principalColumn: "TopicId",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "TopicId");
                 });
 
             migrationBuilder.CreateTable(
@@ -201,6 +197,31 @@ namespace Adminstrator.Migrations
                         principalTable: "Participants",
                         principalColumn: "ParticipantId",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Feedbacks",
+                columns: table => new
+                {
+                    FeedBackID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    EventID = table.Column<int>(type: "int", nullable: false),
+                    SpeakerID = table.Column<int>(type: "int", nullable: false),
+                    feedback_remarks = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Feedbacks", x => x.FeedBackID);
+                    table.ForeignKey(
+                        name: "FK_Feedbacks_Events_EventID",
+                        column: x => x.EventID,
+                        principalTable: "Events",
+                        principalColumn: "EventId");
+                    table.ForeignKey(
+                        name: "FK_Feedbacks_Speakers_SpeakerID",
+                        column: x => x.SpeakerID,
+                        principalTable: "Speakers",
+                        principalColumn: "SpeakerId");
                 });
 
             migrationBuilder.CreateIndex(
@@ -230,16 +251,24 @@ namespace Adminstrator.Migrations
                 column: "TopicId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Feedbacks_EventID",
+                table: "Feedbacks",
+                column: "EventID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Feedbacks_SpeakerID",
+                table: "Feedbacks",
+                column: "SpeakerID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Participants_UserId",
                 table: "Participants",
-                column: "UserId",
-                unique: true);
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Speakers_UserId",
                 table: "Speakers",
-                column: "UserId",
-                unique: true);
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -252,13 +281,16 @@ namespace Adminstrator.Migrations
                 name: "EventParticipant");
 
             migrationBuilder.DropTable(
+                name: "Feedbacks");
+
+            migrationBuilder.DropTable(
                 name: "PromotionCodes");
 
             migrationBuilder.DropTable(
-                name: "Events");
+                name: "Participants");
 
             migrationBuilder.DropTable(
-                name: "Participants");
+                name: "Events");
 
             migrationBuilder.DropTable(
                 name: "Locations");

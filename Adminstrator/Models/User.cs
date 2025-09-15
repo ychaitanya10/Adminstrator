@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Adminstrator.Models
 {
@@ -13,14 +14,18 @@ namespace Adminstrator.Models
 
         [Required]
         [StringLength(20, MinimumLength = 6)]
-        [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]$",
-        ErrorMessage = "Password must be 6-20 characters, contain at least one letter and one number.")]
         public string Password { get; set; }
-        [Required]
-        public string Role { get; set; } 
 
-        public Participant ParticipantProfile { get; set; }
-        public Speaker SpeakerProfile { get; set; }
-        public Administrator AdministratorProfile { get; set; }
+        [Required]
+        public string Role { get; set; }
+
+        [JsonIgnore]
+        public Administrator? Admin { get; set; }
+
+        [JsonIgnore]
+        public Participant? Parti { get; set; }
+
+        [JsonIgnore]
+        public Speaker? Speak { get; set; }
     }
 }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Adminstrator.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250915042635_ElectronicaDB")]
-    partial class ElectronicaDB
+    [Migration("20250915181016_m4")]
+    partial class m4
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,7 +39,8 @@ namespace Adminstrator.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -98,6 +99,33 @@ namespace Adminstrator.Migrations
                     b.HasIndex("TopicId");
 
                     b.ToTable("Events");
+                });
+
+            modelBuilder.Entity("Adminstrator.Models.Feedback", b =>
+                {
+                    b.Property<int>("FeedBackID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FeedBackID"));
+
+                    b.Property<int>("EventID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SpeakerID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("feedback_remarks")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("FeedBackID");
+
+                    b.HasIndex("EventID");
+
+                    b.HasIndex("SpeakerID");
+
+                    b.ToTable("Feedbacks");
                 });
 
             modelBuilder.Entity("Adminstrator.Models.Location", b =>
@@ -171,11 +199,11 @@ namespace Adminstrator.Migrations
                     b.Property<decimal>("DiscountPercentage")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime>("ValidFrom")
-                        .HasColumnType("datetime2");
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
 
-                    b.Property<DateTime>("ValidTo")
-                        .HasColumnType("datetime2");
+                    b.Property<DateOnly>("ValidTo")
+                        .HasColumnType("date");
 
                     b.HasKey("PromotionCodeId");
 
@@ -198,7 +226,7 @@ namespace Adminstrator.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.PrimitiveCollection<string>("KeySkills")
+                    b.Property<string>("KeySkills")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -260,7 +288,8 @@ namespace Adminstrator.Migrations
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -268,7 +297,8 @@ namespace Adminstrator.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("UserId");
 
@@ -293,9 +323,9 @@ namespace Adminstrator.Migrations
             modelBuilder.Entity("Adminstrator.Models.Administrator", b =>
                 {
                     b.HasOne("Adminstrator.Models.User", "User")
-                        .WithOne("AdministratorProfile")
+                        .WithOne("Admin")
                         .HasForeignKey("Adminstrator.Models.Administrator", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -306,19 +336,19 @@ namespace Adminstrator.Migrations
                     b.HasOne("Adminstrator.Models.Location", "Location")
                         .WithMany("Events")
                         .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Adminstrator.Models.Speaker", "Speaker")
                         .WithMany("Events")
                         .HasForeignKey("SpeakerId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Adminstrator.Models.Topic", "Topic")
                         .WithMany("Events")
                         .HasForeignKey("TopicId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Location");
@@ -328,12 +358,31 @@ namespace Adminstrator.Migrations
                     b.Navigation("Topic");
                 });
 
+            modelBuilder.Entity("Adminstrator.Models.Feedback", b =>
+                {
+                    b.HasOne("Adminstrator.Models.Event", "Event")
+                        .WithMany("Feedbacks")
+                        .HasForeignKey("EventID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Adminstrator.Models.Speaker", "Speaker")
+                        .WithMany("Feedbacks")
+                        .HasForeignKey("SpeakerID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("Speaker");
+                });
+
             modelBuilder.Entity("Adminstrator.Models.Participant", b =>
                 {
                     b.HasOne("Adminstrator.Models.User", "User")
-                        .WithOne("ParticipantProfile")
+                        .WithOne("Parti")
                         .HasForeignKey("Adminstrator.Models.Participant", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -342,9 +391,9 @@ namespace Adminstrator.Migrations
             modelBuilder.Entity("Adminstrator.Models.Speaker", b =>
                 {
                     b.HasOne("Adminstrator.Models.User", "User")
-                        .WithOne("SpeakerProfile")
+                        .WithOne("Speak")
                         .HasForeignKey("Adminstrator.Models.Speaker", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -365,6 +414,11 @@ namespace Adminstrator.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Adminstrator.Models.Event", b =>
+                {
+                    b.Navigation("Feedbacks");
+                });
+
             modelBuilder.Entity("Adminstrator.Models.Location", b =>
                 {
                     b.Navigation("Events");
@@ -373,6 +427,8 @@ namespace Adminstrator.Migrations
             modelBuilder.Entity("Adminstrator.Models.Speaker", b =>
                 {
                     b.Navigation("Events");
+
+                    b.Navigation("Feedbacks");
                 });
 
             modelBuilder.Entity("Adminstrator.Models.Topic", b =>
@@ -382,14 +438,11 @@ namespace Adminstrator.Migrations
 
             modelBuilder.Entity("Adminstrator.Models.User", b =>
                 {
-                    b.Navigation("AdministratorProfile")
-                        .IsRequired();
+                    b.Navigation("Admin");
 
-                    b.Navigation("ParticipantProfile")
-                        .IsRequired();
+                    b.Navigation("Parti");
 
-                    b.Navigation("SpeakerProfile")
-                        .IsRequired();
+                    b.Navigation("Speak");
                 });
 #pragma warning restore 612, 618
         }

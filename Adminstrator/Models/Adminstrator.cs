@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Adminstrator.Models
 {
@@ -18,9 +19,11 @@ namespace Adminstrator.Models
         [RegularExpression(@"^[6-9]\d{9}$")]
         public string Phone { get; set; }
 
+
         // Link to User for login
-        public int UserId { get; set; }
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        public int UserId { get; set; }
+        [JsonIgnore]
+        public User? User { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Adminstrator.Models
 {
@@ -17,9 +18,11 @@ namespace Adminstrator.Models
         // Link to User for login
         public int UserId { get; set; }
         [ForeignKey("UserId")]
-        public User User { get; set; }
+
+        [JsonIgnore]
+        public User? User { get; set; }
 
         // Many-to-many: Events attended by this participant
-        public ICollection<Event> Events { get; set; }
+        public ICollection<Event> Events { get; set; }=new List<Event>();
     }
 }

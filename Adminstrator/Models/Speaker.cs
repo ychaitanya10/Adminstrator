@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Adminstrator.Models
 {
@@ -17,15 +18,18 @@ namespace Adminstrator.Models
         [Required]
         public string Address { get; set; }
         
-        public string[] KeySkills { get; set; }
+        public string KeySkills { get; set; }
 
         // Link to User for login
         public int UserId { get; set; }
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        [JsonIgnore]
+        public User ?User { get; set; }
+        [JsonIgnore]
 
-        public ICollection<Event> Events { get; set; }
+        public ICollection<Event> Events { get; set; } = new List<Event>();
+        [JsonIgnore]
 
-        public ICollection<Feedback> Feedbacks { get; set; }
+        public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
     }
 }

@@ -10,9 +10,9 @@ namespace Adminstrator.Models
         [Required]
         public string Code { get; set; }
         [Required]
-        public DateTime ValidFrom { get; set; }
+        public DateOnly ValidFrom { get; set; }
         [Required]
-        public DateTime ValidTo { get; set; }
+        public DateOnly ValidTo { get; set; }
         [Required]
         public decimal DiscountPercentage { get; set; }
     }

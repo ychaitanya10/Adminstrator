@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Adminstrator.Migrations
 {
     /// <inheritdoc />
-    public partial class dbcreation : Migration
+    public partial class m1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -112,8 +112,7 @@ namespace Adminstrator.Migrations
                         name: "FK_Participants_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "UserId");
                 });
 
             migrationBuilder.CreateTable(
@@ -136,8 +135,7 @@ namespace Adminstrator.Migrations
                         name: "FK_Speakers_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "UserId");
                 });
 
             migrationBuilder.CreateTable(
@@ -263,12 +261,14 @@ namespace Adminstrator.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Participants_UserId",
                 table: "Participants",
-                column: "UserId");
+                column: "UserId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Speakers_UserId",
                 table: "Speakers",
-                column: "UserId");
+                column: "UserId",
+                unique: true);
         }
 
         /// <inheritdoc />

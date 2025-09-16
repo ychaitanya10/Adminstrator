@@ -23,6 +23,7 @@ namespace Adminstrator.Models
         public User? User { get; set; }
 
         // Many-to-many: Events attended by this participant
+        [JsonIgnore]
         public ICollection<Event> Events { get; set; }=new List<Event>();
     }
 }

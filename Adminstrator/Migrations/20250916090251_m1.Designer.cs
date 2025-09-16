@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Adminstrator.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250915173259_m1")]
+    [Migration("20250916090251_m1")]
     partial class m1
     {
         /// <inheritdoc />
@@ -178,7 +178,8 @@ namespace Adminstrator.Migrations
 
                     b.HasKey("ParticipantId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Participants");
                 });
@@ -225,7 +226,7 @@ namespace Adminstrator.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.PrimitiveCollection<string>("KeySkills")
+                    b.Property<string>("KeySkills")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -242,7 +243,8 @@ namespace Adminstrator.Migrations
 
                     b.HasKey("SpeakerId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Speakers");
                 });
@@ -378,9 +380,9 @@ namespace Adminstrator.Migrations
             modelBuilder.Entity("Adminstrator.Models.Participant", b =>
                 {
                     b.HasOne("Adminstrator.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithOne("Parti")
+                        .HasForeignKey("Adminstrator.Models.Participant", "UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -389,9 +391,9 @@ namespace Adminstrator.Migrations
             modelBuilder.Entity("Adminstrator.Models.Speaker", b =>
                 {
                     b.HasOne("Adminstrator.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithOne("Speak")
+                        .HasForeignKey("Adminstrator.Models.Speaker", "UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -437,6 +439,10 @@ namespace Adminstrator.Migrations
             modelBuilder.Entity("Adminstrator.Models.User", b =>
                 {
                     b.Navigation("Admin");
+
+                    b.Navigation("Parti");
+
+                    b.Navigation("Speak");
                 });
 #pragma warning restore 612, 618
         }

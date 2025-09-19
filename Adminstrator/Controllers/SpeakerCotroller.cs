@@ -1,12 +1,7 @@
 ﻿using Adminstrator.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
-using System.IO;
-using System.Threading.Tasks;
-using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Adminstrator.Controllers
 {
@@ -15,195 +10,92 @@ namespace Adminstrator.Controllers
     public class SpeakerController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly string _materialsFolder;
 
         public SpeakerController(AppDbContext context)
         {
             _context = context;
-            _materialsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedMaterials");
-            if (!Directory.Exists(_materialsFolder))
-                Directory.CreateDirectory(_materialsFolder);
         }
 
-        // POST: api/speaker/upload-materials
-        [HttpPost("upload-materials")]
-        public async Task<IActionResult> UploadMaterials([FromForm] UploadMaterialFormDto dto)
+        // POST: api/Speaker/register
+        // This endpoint creates both User and Speaker, fixing the foreign key issue
+        [HttpPost("register")]
+        public IActionResult RegisterSpeaker([FromBody] SpeakerRegistrationDto registration)
         {
-            if (dto.MaterialFile == null || dto.MaterialFile.Length == 0)
-                return BadRequest("No file uploaded.");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            var evnt = await _context.Events.FindAsync(dto.EventId);
-            if (evnt == null)
-                return NotFound("Event not found.");
-
-            var fileName = $"{dto.EventId}_{Guid.NewGuid()}_{dto.MaterialFile.FileName}";
-            var filePath = Path.Combine(_materialsFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            // Create User first
+            var user = new User
             {
-                await dto.MaterialFile.CopyToAsync(stream);
-            }
+                Username = registration.Username,
+                Password = registration.Password,
+                Role = "Speaker"
+            };
+            _context.Users.Add(user);
+            _context.SaveChanges();
 
-            // TODO: Save metadata to a Material table (if you have one)
-            var materialUrl = Url.Action(nameof(DownloadMaterial), new { fileName });
-
-            return Ok(new
+            // Create Speaker, referencing UserId
+            var speaker = new Speaker
             {
-                Message = "Materials uploaded successfully!",
-                MaterialUrl = materialUrl
-            });
+                Name = registration.Name,
+                Email = registration.Email,
+                Phone = registration.Phone,
+                Address = registration.Address,
+                KeySkills = string.Join(",", registration.KeySkills),
+
+                UserId = user.UserId
+            };
+            _context.Speakers.Add(speaker);
+            _context.SaveChanges();
+
+            return Ok(speaker);
         }
 
-        // GET: api/speaker/download-material/{fileName}
-        [HttpGet("download-material/{fileName}")]
-        public async Task<IActionResult> DownloadMaterial(string fileName)
+        // GET: api/Speaker/{speakerId}/events
+        [HttpGet("{speakerId}/events")]
+        public IActionResult GetAvailableEvents(int speakerId)
         {
-            var filePath = Path.Combine(_materialsFolder, fileName);
-            if (!System.IO.File.Exists(filePath))
-                return NotFound("Requested material not found.");
-
-            var memory = new MemoryStream();
-            using (var stream = new FileStream(filePath, FileMode.Open))
-            {
-                await stream.CopyToAsync(memory);
-            }
-            memory.Position = 0;
-            var contentType = GetContentType(filePath);
-            return File(memory, contentType, fileName);
-        }
-
-        // GET: api/speaker/roster/{eventId}
-        [HttpGet("roster/{eventId}")]
-        public async Task<IActionResult> GetRoster(int eventId)
-        {
-            //var evnt = await _context.Events
-            //    .Include(e => e.Participants)
-            //    .FirstOrDefaultAsync(e => e.EventId == eventId);
-            var evnt = await _context.Events.FindAsync(eventId);
-
-            if (evnt == null)
-                return NotFound("Event not found.");
-
-            var roster = evnt.Participants
-                .Select(p => new { p.ParticipantId, p.Name, p.Email })
+            // Example logic: get all events not associated with this speaker
+            var events = _context.Events
+                .Where(e => e.SpeakerId != speakerId)
                 .ToList();
-
-            return Ok(roster);
-        }
-
-        // GET: api/speaker/feedback/{eventId}
-        [HttpGet("feedback/{eventId}")]
-        public async Task<IActionResult> ViewFeedback(int eventId)
-        {
-            var feedbacks = await _context.Feedbacks
-                .Where(f => f.EventID == eventId)
-                .Select(f => new
-                {
-                    f.FeedBackID,
-                    f.feedback_remarks,
-                    f.SpeakerID
-                })
-                .ToListAsync();
-
-            return Ok(feedbacks);
-        }
-
-        // POST: api/speaker/express-interest
-        [HttpPost("express-interest")]
-        public async Task<IActionResult> ExpressInterest([FromBody] CourseInterestDto dto)
-        {
-            var speaker = await _context.Speakers
-                .FirstOrDefaultAsync(s => s.SpeakerId == dto.SpeakerId);
-
-            var topic = await _context.Topics
-                .FirstOrDefaultAsync(t => t.TopicId == dto.TopicId);
-
-            if (speaker == null || topic == null)
-                return NotFound("Speaker or topic not found.");
-
-            // TODO: Save interest to a SpeakerCourseInterest table (not in your current models)
-            // For now, just return OK
-            return Ok(new { Message = $"Interest expressed for topic '{topic.TopicName}' successfully!" });
-        }
-
-        // GET: api/speaker/search-events?topicId=2
-        [HttpGet("search-events")]
-        public async Task<IActionResult> SearchEvents([FromQuery] int topicId)
-        {
-            var topic = await _context.Topics.FindAsync(topicId);
-            if (topic == null)
-                return NotFound("Topic not found.");
-
-            var events = await _context.Events
-                .Where(e => e.TopicId == topicId)
-                .Select(e => new
-                {
-                    e.EventId,
-                    e.CourseTitle,
-                    e.StartDate,
-                    e.EndDate,
-                    e.ClassSize
-                })
-                .ToListAsync();
 
             return Ok(events);
         }
 
-        // POST: api/speaker/enroll
-        [HttpPost("enroll")]
-        public async Task<IActionResult> EnrollForEvent([FromBody] SpeakerEnrollmentDto dto)
+        // POST: api/Speaker/{speakerId}/enroll/{eventId}
+        [HttpPost("{speakerId}/enroll/{eventId}")]
+        public IActionResult EnrollInEvent(int speakerId, int eventId)
         {
-            var speaker = await _context.Speakers.FindAsync(dto.SpeakerId);
-            var evnt = await _context.Events.FindAsync(dto.EventId);
+            var @event = _context.Events.Find(eventId);
+            if (@event == null)
+                return NotFound("Event not found.");
 
-            if (speaker == null || evnt == null)
-                return NotFound("Speaker or Event not found.");
-
-            if (evnt.SpeakerId != 0 && evnt.SpeakerId != null)
-                return BadRequest("Event already has a speaker.");
-
-            evnt.SpeakerId = speaker.SpeakerId;
-            await _context.SaveChangesAsync();
-
-            // TODO: Notify admin
-            return Ok(new { Message = $"Speaker {dto.SpeakerId} enrolled for event {dto.EventId} successfully!" });
+            @event.SpeakerId = speakerId;
+            _context.SaveChanges();
+            return Ok("Enrolled successfully.");
         }
 
-        // Helper: Basic content type detection
-        private string GetContentType(string path)
+        // GET: api/Speaker/{speakerId}/feedback
+        [HttpGet("{speakerId}/feedback")]
+        public IActionResult GetSpeakerFeedback(int speakerId)
         {
-            var ext = Path.GetExtension(path).ToLowerInvariant();
-            return ext switch
-            {
-                ".pdf" => "application/pdf",
-                ".doc" or ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                ".ppt" or ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".txt" => "text/plain",
-                _ => "application/octet-stream"
-            };
+            var feedbacks = _context.Feedbacks
+                .Where(f => f.SpeakerID == speakerId)
+                .ToList();
+            return Ok(feedbacks);
         }
     }
 
-    // DTOs
-
-    public class UploadMaterialFormDto
+    // DTO for registration
+    public class SpeakerRegistrationDto
     {
-        public int EventId { get; set; }
-        public string Title { get; set; }
-        public IFormFile MaterialFile { get; set; }
-    }
-
-    public class CourseInterestDto
-    {
-        public int SpeakerId { get; set; }
-        public int TopicId { get; set; }
-    }
-
-    public class SpeakerEnrollmentDto
-    {
-        public int SpeakerId { get; set; }
-        public int EventId { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string Name { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string Address { get; set; }
+        public string[] KeySkills { get; set; }
     }
 }

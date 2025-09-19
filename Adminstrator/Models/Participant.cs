@@ -8,22 +8,25 @@ namespace Adminstrator.Models
     {
         [Key]
         public int ParticipantId { get; set; }
+
         [Required]
         public string Name { get; set; }
+
         [Required]
         public string Email { get; set; }
+
         [Required]
         public string Phone { get; set; }
 
         // Link to User for login
         public int UserId { get; set; }
-        [ForeignKey("UserId")]
 
+        [ForeignKey("UserId")]
         [JsonIgnore]
-        public User? User { get; set; }
+        public User User { get; set; }
 
         // Many-to-many: Events attended by this participant
         [JsonIgnore]
-        public ICollection<Event> Events { get; set; }=new List<Event>();
+        public ICollection<Event> Events { get; set; } = new List<Event>();
     }
 }

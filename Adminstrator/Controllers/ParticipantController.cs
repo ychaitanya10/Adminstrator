@@ -1,110 +1,154 @@
 ﻿using Adminstrator.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-
-namespace Adminstrator.Controllers
+namespace Administrator.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class ParticipantController : ControllerBase
+    [ApiController]
+    public class ParticipantsController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public ParticipantController(AppDbContext context)
+        public ParticipantsController(AppDbContext context)
         {
             _context = context;
         }
 
-        //// 1. Register a new participant
-        //[HttpPost("register")]
-        //public async Task<IActionResult> Register(Participant participant)
-        //{
-        //    _context.Participants.Add(participant);
-        //    await _context.SaveChangesAsync();
-        //    return Ok(participant);
-        //}
-
-        // 2. Modify participant details
-        [HttpPut("update/{id}")]
-        public async Task<ActionResult> UpdateParticipant(int id, [FromBody] Participant updated)
+        // POST: api/Participants/Register
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] Participant participant)
         {
+            if (participant == null)
+                return BadRequest("Participant data is required.");
+
+            // Ensure that User information is included
+            if (participant.User == null)
+                return BadRequest("User information is required.");
+
+            // Validate username uniqueness
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == participant.User.Username);
+            if (existingUser != null)
+                return BadRequest("Username already exists.");
+
+            // Add the user to the Users table
+            _context.Users.Add(participant.User);
+            await _context.SaveChangesAsync();
+
+            // Assign the UserId to the Participant (set the foreign key)
+            participant.UserId = participant.User.UserId;
+
+            // Add the Participant to the Participants table
+            _context.Participants.Add(participant);
+            await _context.SaveChangesAsync();
+
+            // Return success response
+            return Ok(new { message = "Participant registered successfully", participantId = participant.ParticipantId });
+        }
+
+        // POST: api/Participants/{participantId}/Enroll/{eventId}
+        [HttpPost("{participantId}/Enroll/{eventId}")]
+        public async Task<IActionResult> EnrollInEvent(int participantId, int eventId)
+        {
+            // Find the participant and event in the database
+            var participant = await _context.Participants.Include(p => p.Events).FirstOrDefaultAsync(p => p.ParticipantId == participantId);
+            var eventEntity = await _context.Events.FindAsync(eventId);
+
+            if (participant == null)
+            {
+                return NotFound(new { message = "Participant not found." });
+            }
+
+            if (eventEntity == null)
+            {
+                return NotFound(new { message = "Event not found." });
+            }
+
+            // Check if the participant is already enrolled in the event
+            if (!participant.Events.Contains(eventEntity))
+            {
+                participant.Events.Add(eventEntity);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { message = "Enrollment successful" });
+        }
+
+        // PUT: api/Participants/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateParticipant(int id, [FromBody] Participant updatedData)
+        {
+            if (updatedData == null)
+                return BadRequest("Updated participant data is required.");
+
             var participant = await _context.Participants
                 .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.ParticipantId == id);
 
-            if (participant == null) return NotFound("Participant not found.");
+            if (participant == null)
+                return NotFound(new { message = "Participant not found." });
 
-            // Update only if values are provided
-            if (!string.IsNullOrWhiteSpace(updated.Name)&&updated.Name!="string")
-                participant.Name = updated.Name;
+            bool participantUpdated = false;
+            bool userUpdated = false;
 
-            if (!string.IsNullOrWhiteSpace(updated.Email)&&updated.Email != "string")
-                participant.Email = updated.Email;
-
-            if (!string.IsNullOrWhiteSpace(updated.Phone)&&updated.Phone != "string")
-                participant.Phone = updated.Phone;
-
-            // Optional: update User fields if provided
-            if (updated.User != null)
+            // Update participant details
+            if (!string.IsNullOrWhiteSpace(updatedData.Name) && updatedData.Name != participant.Name)
             {
-                if (!string.IsNullOrWhiteSpace(updated.User.Username))
-                    participant.User.Username = updated.User.Username;
+                participant.Name = updatedData.Name;
+                participantUpdated = true;
 
-                if (!string.IsNullOrWhiteSpace(updated.User.Password))
-                    participant.User.Password = updated.User.Password; // Consider hashing
+                // Update username if it's different from previous
+                if (participant.User != null && updatedData.Name != participant.User.Username)
+                {
+                    participant.User.Username = updatedData.Name; // Optional: only update if needed
+                    userUpdated = true;
+                }
             }
 
-            await _context.SaveChangesAsync();
-            return Ok(participant);
+            if (!string.IsNullOrWhiteSpace(updatedData.Email) && updatedData.Email != participant.Email)
+            {
+                participant.Email = updatedData.Email;
+                participantUpdated = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(updatedData.Phone) && updatedData.Phone != participant.Phone)
+            {
+                participant.Phone = updatedData.Phone;
+                participantUpdated = true;
+            }
+
+            if (participantUpdated || userUpdated)
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Participant and/or User updated successfully" });
+            }
+
+            return Ok(new { message = "No changes detected" });
         }
 
-        // 3. Enroll in an event
-        [HttpPost("enroll")]
-        public async Task<IActionResult> Enroll(int participantId, int eventId)
+        // POST: api/Participants/Feedback
+        [HttpPost("Feedback")]
+        public async Task<IActionResult> SubmitFeedback([FromBody] Feedback feedback)
         {
-            var participant = await _context.Participants
-                .Include(p => p.Events)
-                .FirstOrDefaultAsync(p => p.ParticipantId == participantId);
+            // Validate the feedback data
+            if (feedback == null || feedback.EventID <= 0 || feedback.SpeakerID <= 0 || string.IsNullOrWhiteSpace(feedback.feedback_remarks))
+            {
+                return BadRequest("Invalid feedback data.");
+            }
 
-            var evnt = await _context.Events.FindAsync(eventId);
-
-            if (participant == null || evnt == null)
-                return NotFound("Participant or Event not found.");
-
-            participant.Events.Add(evnt);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Message = "Enrollment successful." });
-        }
-
-        // 4. Submit feedback
-        [HttpPost("submit-feedback")]
-        public async Task<IActionResult> SubmitFeedback(Feedback feedback)
-        {
+            // Add the feedback to the database
             _context.Feedbacks.Add(feedback);
             await _context.SaveChangesAsync();
-            return Ok(feedback);
+
+            return Ok(new { message = "Feedback submitted successfully" });
         }
 
-        // 5. Apply a promotion code (simplified logic)
-        //[HttpPost("apply-promocode")]
-        //public IActionResult ApplyPromoCode(string promoCode)
-        //{
-        //    // Simulate promo code validation
-        //    var validCodes = await _context.PromotionCodes.FindAsync(promoCode);
-
-        //    if (!validCodes.Contains(promoCode.ToUpper()))
-        //        return BadRequest("Invalid promo code.");
-
-        //    return Ok(new { Message = "Promo code applied successfully!", Discount = "10-50%" });
-        //}
-
-        [HttpGet]
-        public async Task<IActionResult> getParticipant()
+        // Optional: Get all feedback (if needed)
+        [HttpGet("Feedback")]
+        public async Task<IActionResult> GetFeedbacks()
         {
-            return Ok(_context.Participants.ToListAsync());
+            var feedbacks = await _context.Feedbacks.ToListAsync();
+            return Ok(feedbacks);
         }
     }
 }
